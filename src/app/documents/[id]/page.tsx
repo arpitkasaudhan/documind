@@ -4,9 +4,10 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/prisma";
 import { Navbar } from "@/components/features/Navbar";
 import { DocumentChatView } from "@/components/features/DocumentChatView";
+import { ProcessingStatus } from "@/components/features/ProcessingStatus";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ExternalLink, ChevronLeft, Zap } from "lucide-react";
+import { FileText, ExternalLink, ChevronLeft, Zap, FileBarChart2 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 import type { ChatMessage } from "@/hooks/useStreamChat";
 
@@ -108,12 +109,20 @@ export default async function DocumentPage({ params }: PageProps) {
             <div className="flex items-center gap-2 shrink-0">
               <Badge variant={statusVariant[document.status]}>{document.status}</Badge>
               {document.status === "READY" && (
-                <Link href={`/documents/${id}/extract`}>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Zap className="w-4 h-4" />
-                    Extract data
-                  </Button>
-                </Link>
+                <>
+                  <Link href={`/documents/${id}/report`}>
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <FileBarChart2 className="w-4 h-4" />
+                      Report
+                    </Button>
+                  </Link>
+                  <Link href={`/documents/${id}/extract`}>
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Zap className="w-4 h-4" />
+                      Extract
+                    </Button>
+                  </Link>
+                </>
               )}
               <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm" className="gap-1.5">
@@ -133,16 +142,7 @@ export default async function DocumentPage({ params }: PageProps) {
             activeSession={{ ...activeSession, fullMessages: initialMessages }}
           />
         ) : document.status === "PROCESSING" ? (
-          <div className="flex-1 bg-white rounded-xl border border-neutral-200 flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mx-auto mb-4" />
-              <p className="font-medium text-neutral-700">Processing your document…</p>
-              <p className="text-sm text-neutral-400 mt-1">This usually takes 30–60 seconds.</p>
-              <p className="text-sm text-violet-500 mt-3 cursor-pointer hover:underline" onClick={() => window.location.reload()}>
-                Refresh to check status
-              </p>
-            </div>
-          </div>
+          <ProcessingStatus documentId={document.id} />
         ) : (
           <div className="bg-white rounded-xl border border-red-200 flex items-center justify-center py-12">
             <div className="text-center">

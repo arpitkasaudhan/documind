@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Brain, LogOut, User, LayoutDashboard } from "lucide-react";
+import { Brain, LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 
@@ -10,6 +10,10 @@ interface NavbarProps {
 }
 
 export function Navbar({ user }: NavbarProps) {
+  const initials = user?.name
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() ?? "?";
+
   return (
     <header className="border-b border-neutral-200 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -20,20 +24,30 @@ export function Navbar({ user }: NavbarProps) {
           <span className="font-bold text-xl text-neutral-900">DocuMind</span>
         </Link>
 
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1">
           {user ? (
             <>
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="gap-1.5">
                   <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
+                  <span className="hidden sm:inline">Dashboard</span>
                 </Button>
               </Link>
-              <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
-                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
-                  <User className="w-4 h-4 text-violet-600" />
+
+              <div className="w-px h-5 bg-neutral-200 mx-1" />
+
+              <Link href="/settings">
+                <Button variant="ghost" size="sm" className="gap-1.5" title="Settings">
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </Button>
+              </Link>
+
+              <div className="flex items-center gap-2 pl-1 ml-1 border-l border-neutral-200">
+                <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold select-none">
+                  {initials}
                 </div>
-                <span className="text-sm text-neutral-700 hidden sm:block">
+                <span className="text-sm text-neutral-700 hidden md:block max-w-30 truncate">
                   {user.name ?? user.email}
                 </span>
                 <Button
@@ -41,6 +55,7 @@ export function Navbar({ user }: NavbarProps) {
                   size="icon"
                   onClick={() => signOut({ callbackUrl: "/" })}
                   title="Sign out"
+                  className="text-neutral-400 hover:text-red-600"
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>
@@ -49,7 +64,7 @@ export function Navbar({ user }: NavbarProps) {
           ) : (
             <>
               <Link href="/login"><Button variant="ghost" size="sm">Log in</Button></Link>
-              <Link href="/register"><Button size="sm">Get started</Button></Link>
+              <Link href="/register"><Button size="sm">Get started free</Button></Link>
             </>
           )}
         </nav>

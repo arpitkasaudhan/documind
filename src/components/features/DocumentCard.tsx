@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface DocumentCardProps {
   id: string;
@@ -38,8 +39,17 @@ export function DocumentCard({
     e.preventDefault();
     if (!confirm("Delete this document and all its chats?")) return;
     setDeleting(true);
-    await fetch(`/api/documents/${id}`, { method: "DELETE" });
-    router.refresh();
+    try {
+      const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(`"${name}" deleted`);
+        router.refresh();
+      } else {
+        toast.error("Failed to delete document");
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (

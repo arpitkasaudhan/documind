@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import { Toaster } from "sonner";
 import { auth } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -18,6 +19,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.className} bg-neutral-50 text-neutral-900 antialiased`}>
         <SessionProvider session={session}>
           {children}
+          <Toaster position="bottom-right" richColors />
         </SessionProvider>
       </body>
     </html>

@@ -5,6 +5,7 @@ import { Upload, FileText, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatBytes } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface FileUploadProps {
   onSuccess?: (documentId: string) => void;
@@ -41,17 +42,24 @@ export function FileUpload({ onSuccess }: FileUploadProps) {
     if (!file) return;
     setUploading(true);
     setError(null);
+    const loadingToast = toast.loading(`Uploading ${file.name}…`);
     try {
       const form = new FormData();
       form.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+
+      toast.dismiss(loadingToast);
+      toast.success("Document uploaded! Processing in background…");
       onSuccess?.(data.document.id);
       router.push(`/documents/${data.document.id}`);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "Upload failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setUploading(false);
     }
@@ -77,7 +85,6 @@ export function FileUpload({ onSuccess }: FileUploadProps) {
           className="hidden"
           onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
         />
-
         {file ? (
           <div className="flex items-center gap-3 justify-center">
             <FileText className="w-8 h-8 text-violet-600 shrink-0" />
@@ -86,7 +93,7 @@ export function FileUpload({ onSuccess }: FileUploadProps) {
               <p className="text-sm text-neutral-500">{formatBytes(file.size)}</p>
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); setFile(null); }}
+              onClick={(e) => { e.stopPropagation(); setFile(null); setError(null); }}
               className="ml-auto text-neutral-400 hover:text-neutral-600"
             >
               <X className="w-5 h-5" />
@@ -106,7 +113,7 @@ export function FileUpload({ onSuccess }: FileUploadProps) {
       {file && (
         <Button onClick={upload} disabled={uploading} className="w-full mt-4" size="lg">
           {uploading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Uploading & processing…</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
           ) : (
             <><Upload className="w-4 h-4" /> Upload Document</>
           )}
