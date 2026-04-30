@@ -1,6 +1,15 @@
-export type { User, Document, ChatSession, Message, Subscription } from "@prisma/client";
+export type {
+  User,
+  Document,
+  ChatSession,
+  Message,
+  Subscription,
+  DocumentStatus,
+  MessageRole,
+  Plan,
+} from "@prisma/client";
 
-export interface DocumentWithStats {
+export interface DocumentWithChatCount {
   id: string;
   name: string;
   originalName: string;
@@ -11,20 +20,11 @@ export interface DocumentWithStats {
   status: "PROCESSING" | "READY" | "FAILED";
   vectorized: boolean;
   createdAt: Date;
-  _count?: { chatSessions: number };
-}
-
-export interface ChatMessage {
-  id: string;
-  role: "USER" | "ASSISTANT";
-  content: string;
-  sources?: Array<{ text: string; pageNumber?: number }>;
-  createdAt: Date;
+  updatedAt: Date;
+  _count: { chatSessions: number };
 }
 
 export interface APIResponse<T> {
   data?: T;
   error?: string;
 }
-
-export type Plan = "FREE" | "PRO";

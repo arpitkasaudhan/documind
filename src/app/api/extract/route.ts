@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ extracted });
   } catch (e) {
     if (e instanceof z.ZodError) {
-      return NextResponse.json({ error: e.errors[0].message }, { status: 422 });
+      return NextResponse.json({ error: e.issues[0]?.message ?? "Validation error" }, { status: 422 });
     }
     return NextResponse.json({ error: "Extraction failed" }, { status: 500 });
   }

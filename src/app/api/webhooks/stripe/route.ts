@@ -22,11 +22,12 @@ export async function POST(req: Request) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.metadata?.userId;
-      if (!userId) break;
+      if (!userId || !session.subscription) break;
 
       const subscription = await stripe.subscriptions.retrieve(
         session.subscription as string
       );
+
       await db.subscription.upsert({
         where: { userId },
         create: {
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
           stripeSubscriptionId: subscription.id,
           stripePriceId: subscription.items.data[0].price.id,
           stripeCurrentPeriodEnd: new Date(
-            subscription.current_period_end * 1000
+            (subscription as unknown as { current_period_end: number }).current_period_end * 1000
           ),
           plan: "PRO",
         },
@@ -44,21 +45,31 @@ export async function POST(req: Request) {
           stripeSubscriptionId: subscription.id,
           stripePriceId: subscription.items.data[0].price.id,
           stripeCurrentPeriodEnd: new Date(
-            subscription.current_period_end * 1000
+            (subscription as unknown as { current_period_end: number }).current_period_end * 1000
           ),
           plan: "PRO",
         },
       });
       break;
     }
+
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
-      const sub = await stripe.subscriptions.retrieve(
-        invoice.subscription as string
-      );
+      const subscriptionId = (invoice as unknown as { subscription: string }).subscription;
+      if (!subscriptionId) break;
+
       await db.subscription.updateMany({
-        where: { stripeSubscriptionId: sub.id },
+        where: { stripeSubscriptionId: subscriptionId },
         data: { plan: "FREE" },
+      });
+      break;
+    }
+
+    case "customer.subscription.deleted": {
+      const subscription = event.data.object as Stripe.Subscription;
+      await db.subscription.updateMany({
+        where: { stripeSubscriptionId: subscription.id },
+        data: { plan: "FREE", stripeSubscriptionId: null },
       });
       break;
     }

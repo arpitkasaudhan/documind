@@ -1,0 +1,21 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npx prisma generate && next build",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "AUTH_SECRET": "@auth_secret",
+    "ANTHROPIC_API_KEY": "@anthropic_api_key",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "PINECONE_API_KEY": "@pinecone_api_key",
+    "PINECONE_INDEX": "@pinecone_index",
+    "AWS_ACCESS_KEY_ID": "@aws_access_key_id",
+    "AWS_SECRET_ACCESS_KEY": "@aws_secret_access_key",
+    "AWS_REGION": "@aws_region",
+    "AWS_S3_BUCKET": "@aws_s3_bucket",
+    "STRIPE_SECRET_KEY": "@stripe_secret_key",
+    "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@next_public_stripe_publishable_key",
+    "STRIPE_PRO_PRICE_ID": "@stripe_pro_price_id",
+    "NEXT_PUBLIC_APP_URL": "@next_public_app_url"
+  }
+}

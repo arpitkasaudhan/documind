@@ -6,6 +6,7 @@ export interface ExtractionSchema {
   type: "object";
   properties: Record<string, { type: string; description?: string }>;
   required?: string[];
+  additionalProperties?: boolean;
 }
 
 export async function extractStructuredData(
@@ -16,19 +17,13 @@ export async function extractStructuredData(
   const response = await client.messages.create({
     model: "claude-opus-4-7",
     max_tokens: 4096,
-    output_config: {
-      format: {
-        type: "json_schema",
-        schema: {
-          ...schema,
-          additionalProperties: false,
-        },
-      },
-    } as Parameters<typeof client.messages.create>[0]["output_config"],
     messages: [
       {
         role: "user",
         content: `${instruction}
+
+Respond ONLY with a valid JSON object matching this schema (no markdown, no explanation):
+${JSON.stringify({ ...schema, additionalProperties: false }, null, 2)}
 
 DOCUMENT CONTENT:
 ${documentText.slice(0, 50000)}`,
@@ -40,7 +35,9 @@ ${documentText.slice(0, 50000)}`,
   if (!textBlock || textBlock.type !== "text") {
     throw new Error("No text response from extraction");
   }
-  return JSON.parse(textBlock.text);
+  // Strip markdown code fences if present
+  const raw = textBlock.text.replace(/```json\n?|\n?```/g, "").trim();
+  return JSON.parse(raw);
 }
 
 export async function generateDocumentSummary(

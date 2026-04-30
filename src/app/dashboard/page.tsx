@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/prisma";
+import type { Document } from "@prisma/client";
 import { Navbar } from "@/components/features/Navbar";
 import { DocumentCard } from "@/components/features/DocumentCard";
 import { FileUpload } from "@/components/features/FileUpload";
@@ -68,7 +69,7 @@ export default async function DashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {documents.map((doc) => (
+              {documents.map((doc: Document & { _count: { chatSessions: number } }) => (
                 <DocumentCard
                   key={doc.id}
                   id={doc.id}

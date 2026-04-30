@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DocuMind — AI Document Intelligence
+
+Upload PDFs, chat with them using Claude AI, extract structured data, and generate reports.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 15 (App Router, TypeScript) |
+| Styling | Tailwind CSS (custom components) |
+| Database | PostgreSQL + Prisma v5 |
+| Auth | NextAuth v5 (email/password + Google OAuth) |
+| AI | Anthropic Claude opus-4-7 (chat + extraction) |
+| Embeddings | OpenAI text-embedding-3-small |
+| Vector DB | Pinecone v7 (RAG retrieval) |
+| File Storage | AWS S3 |
+| Payments | Stripe v14 subscriptions |
+| Deployment | Vercel |
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone and install
+
+```bash
+git clone https://github.com/arpitkasaudhan/documind
+cd documind
+npm install
+```
+
+### 2. Set up environment variables
+
+```bash
+cp .env.example .env.local
+# Fill in all values in .env.local
+```
+
+Services needed:
+- **Neon** (free PostgreSQL) → [neon.tech](https://neon.tech)
+- **Anthropic** → [console.anthropic.com](https://console.anthropic.com)
+- **OpenAI** (embeddings only) → [platform.openai.com](https://platform.openai.com)
+- **Pinecone** (free, create index `documind`, 1536 dimensions) → [pinecone.io](https://pinecone.io)
+- **AWS S3** bucket `documind-files` → [aws.amazon.com](https://aws.amazon.com)
+- **Stripe** test mode keys → [stripe.com](https://stripe.com)
+
+### 3. Set up the database
+
+```bash
+npx prisma db push
+```
+
+### 4. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment (Vercel)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push this repo to GitHub
+2. Connect on [vercel.com](https://vercel.com) → Import project
+3. Add all env vars in Vercel dashboard
+4. `vercel.json` runs `prisma generate` before every build
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── api/               Route handlers
+│   │   ├── auth/          NextAuth
+│   │   ├── chat/          RAG streaming chat (Anthropic SDK direct)
+│   │   ├── documents/     Document CRUD
+│   │   ├── extract/       AI structured extraction
+│   │   ├── sessions/      Chat session management
+│   │   ├── upload/        PDF upload + S3 + async Pinecone indexing
+│   │   ├── billing/       Stripe checkout
+│   │   └── webhooks/      Stripe webhook handler
+│   ├── dashboard/         Main dashboard page
+│   ├── documents/[id]/    Document detail + multi-session chat
+│   │   └── extract/       AI extraction UI with presets
+│   ├── login/ register/ pricing/
+├── components/
+│   ├── features/          ChatWindow, FileUpload, DocumentCard, Navbar,
+│   │                      SessionSidebar, DocumentChatView
+│   └── ui/                Button, Input, Card, Badge, Skeleton
+├── hooks/
+│   ├── useStreamChat.ts   Custom streaming chat hook (no ai SDK)
+│   └── useDocumentStatus  Auto-polling hook for PROCESSING documents
+└── lib/
+    ├── ai/                PDF parse, chunking, RAG, embeddings, extraction
+    ├── auth.ts            NextAuth v5 config
+    ├── db/                Prisma v5 singleton
+    ├── storage/           AWS S3 helpers
+    ├── stripe.ts          Stripe v14 helpers
+    └── vector/            Pinecone v7 helpers
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Plans
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Feature | Free | Pro |
+|---|---|---|
+| Documents | 3 | 100 |
+| Pages/doc | 10 | 500 |
+| Chat | Unlimited | Unlimited |
+| Extraction | Basic | Advanced |
+| Price | ₹0 | ₹799/mo |
