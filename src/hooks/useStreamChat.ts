@@ -2,10 +2,16 @@
 
 import { useState, useCallback } from "react";
 
+export interface Source {
+  text: string;
+  pageNumber?: number;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  sources?: Source[];
 }
 
 interface UseStreamChatOptions {
@@ -36,15 +42,16 @@ export function useStreamChat({ api, body, initialMessages = [] }: UseStreamChat
         const res = await fetch(api, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [...messages, userMsg],
-            ...body,
-          }),
+          body: JSON.stringify({ messages: [...messages, userMsg], ...body }),
         });
 
         if (!res.ok || !res.body) {
           throw new Error(await res.text());
         }
+
+        // Read sources from response header
+        const sourcesHeader = res.headers.get("X-Sources");
+        const sources: Source[] = sourcesHeader ? JSON.parse(sourcesHeader) : [];
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -57,6 +64,13 @@ export function useStreamChat({ api, body, initialMessages = [] }: UseStreamChat
             prev.map((m) =>
               m.id === assistantId ? { ...m, content: m.content + chunk } : m
             )
+          );
+        }
+
+        // Attach sources after streaming completes
+        if (sources.length > 0) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, sources } : m))
           );
         }
       } catch (err) {
@@ -76,7 +90,9 @@ export function useStreamChat({ api, body, initialMessages = [] }: UseStreamChat
   return {
     messages,
     input,
-    handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value),
+    setInput,
+    handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) =>
+      setInput(e.target.value),
     handleSubmit,
     isLoading,
   };

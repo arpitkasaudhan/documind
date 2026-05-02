@@ -4,9 +4,8 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/prisma";
 import { Navbar } from "@/components/features/Navbar";
-import { DocumentChatView } from "@/components/features/DocumentChatView";
+import { DocumentView } from "@/components/features/DocumentView";
 import { ProcessingStatus } from "@/components/features/ProcessingStatus";
-import { PDFViewer } from "@/components/features/PDFViewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -153,21 +152,12 @@ export default async function DocumentPage({ params }: PageProps) {
 
         {/* Main content */}
         {document.status === "READY" ? (
-          <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-[600px]">
-            {/* PDF Viewer — hidden on mobile, visible on lg+ */}
-            <div className="hidden lg:flex lg:flex-1 min-h-0">
-              <PDFViewer documentId={document.id} documentName={document.name} />
-            </div>
-
-            {/* Chat panel */}
-            <div className="flex-1 lg:w-[480px] lg:shrink-0 lg:flex-none min-h-[600px]">
-              <DocumentChatView
-                documentId={document.id}
-                sessions={allSessions}
-                activeSession={{ ...activeSession, fullMessages: initialMessages }}
-              />
-            </div>
-          </div>
+          <DocumentView
+            documentId={document.id}
+            documentName={document.name}
+            sessions={allSessions}
+            activeSession={{ ...activeSession, fullMessages: initialMessages }}
+          />
         ) : document.status === "PROCESSING" ? (
           <ProcessingStatus documentId={document.id} />
         ) : (

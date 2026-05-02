@@ -81,11 +81,19 @@ export async function POST(req: Request) {
     },
   });
 
+  const sources = context.map((c) => ({
+    text: c.text.slice(0, 200),
+    pageNumber: c.pageNumber,
+  }));
+
   return new Response(readable, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Transfer-Encoding": "chunked",
       "X-Content-Type-Options": "nosniff",
+      // Send sources to client so the chat UI can show citations
+      "X-Sources": JSON.stringify(sources),
+      "Access-Control-Expose-Headers": "X-Sources",
     },
   });
 }
