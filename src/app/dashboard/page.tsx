@@ -5,24 +5,27 @@ import { db } from "@/lib/db/prisma";
 import { Navbar } from "@/components/features/Navbar";
 import { FileUpload } from "@/components/features/FileUpload";
 import { DocumentGrid } from "@/components/features/DocumentGrid";
+import { DashboardStats } from "@/components/features/DashboardStats";
 import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [documents, subscription] = await Promise.all([
+  const [documents, subscription, totalChats] = await Promise.all([
     db.document.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
       include: { _count: { select: { chatSessions: true } } },
     }),
     db.subscription.findUnique({ where: { userId: session.user.id } }),
+    db.chatSession.count({ where: { userId: session.user.id } }),
   ]);
 
   const plan = subscription?.plan ?? "FREE";
   const docLimit = plan === "PRO" ? 100 : 3;
   const atLimit = documents.length >= docLimit;
+  const readyDocs = documents.filter((d) => d.status === "READY").length;
 
   return (
     <div className="min-h-screen">
@@ -30,14 +33,14 @@ export default async function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-neutral-900">
               Welcome back, {session.user.name?.split(" ")[0] ?? "there"} 👋
             </h1>
-            <p className="text-neutral-500 mt-1">
+            <p className="text-neutral-500 mt-1 text-sm">
               {documents.length}/{docLimit} documents ·{" "}
-              <span className={plan === "PRO" ? "text-violet-600 font-medium" : "text-neutral-500"}>
+              <span className={plan === "PRO" ? "text-violet-600 font-medium" : ""}>
                 {plan} plan
               </span>
             </p>
@@ -49,7 +52,15 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Upload — hide when at limit */}
+        {/* Stats */}
+        <DashboardStats
+          totalDocs={documents.length}
+          readyDocs={readyDocs}
+          totalChats={totalChats}
+          plan={plan}
+        />
+
+        {/* Upload or limit warning */}
         {!atLimit ? (
           <div className="bg-white rounded-2xl border border-dashed border-violet-300 p-8 mb-8">
             <h2 className="text-lg font-semibold text-neutral-900 mb-1">Upload a document</h2>

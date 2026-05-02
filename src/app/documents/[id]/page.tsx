@@ -1,18 +1,33 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db/prisma";
 import { Navbar } from "@/components/features/Navbar";
 import { DocumentChatView } from "@/components/features/DocumentChatView";
 import { ProcessingStatus } from "@/components/features/ProcessingStatus";
+import { PDFViewer } from "@/components/features/PDFViewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ExternalLink, ChevronLeft, Zap, FileBarChart2 } from "lucide-react";
+import {
+  FileText, ExternalLink, ChevronLeft, Zap, FileBarChart2,
+} from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 import type { ChatMessage } from "@/hooks/useStreamChat";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const session = await auth();
+  if (!session?.user?.id) return { title: "Document — DocuMind" };
+  const { id } = await params;
+  const doc = await db.document.findFirst({
+    where: { id, userId: session.user.id },
+    select: { name: true },
+  });
+  return { title: doc ? `${doc.name} — DocuMind` : "Document — DocuMind" };
 }
 
 export default async function DocumentPage({ params }: PageProps) {
@@ -39,7 +54,6 @@ export default async function DocumentPage({ params }: PageProps) {
     },
   });
 
-  // Ensure at least one session exists
   let activeSession = allSessions[0];
   if (!activeSession) {
     activeSession = await db.chatSession.create({
@@ -80,74 +94,89 @@ export default async function DocumentPage({ params }: PageProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar user={session.user} />
-      <main className="flex-1 flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 gap-4">
+      <main className="flex-1 flex flex-col max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-4 gap-4">
 
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2">
+        {/* Document header bar */}
+        <div className="bg-white rounded-xl border border-neutral-200 px-5 py-3 flex items-center gap-4">
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-neutral-500">
+            <Button variant="ghost" size="sm" className="gap-1 text-neutral-500 shrink-0">
               <ChevronLeft className="w-4 h-4" />
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
             </Button>
           </Link>
-        </div>
 
-        {/* Document header */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
-              <FileText className="w-6 h-6 text-violet-600" />
+          <div className="w-px h-5 bg-neutral-200 shrink-0" />
+
+          <div className="w-9 h-9 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5 text-violet-600" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold text-neutral-900 truncate text-sm sm:text-base">
+              {document.name}
+            </h1>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-neutral-400">
+              <span>{formatBytes(document.fileSize)}</span>
+              {document.pageCount && <span>· {document.pageCount} pages</span>}
+              <span>· {formatDate(document.createdAt)}</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold text-neutral-900 truncate">{document.name}</h1>
-              <div className="flex items-center gap-3 mt-1 text-xs text-neutral-500">
-                <span>{formatBytes(document.fileSize)}</span>
-                {document.pageCount && <span>{document.pageCount} pages</span>}
-                <span>Uploaded {formatDate(document.createdAt)}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant={statusVariant[document.status]}>{document.status}</Badge>
-              {document.status === "READY" && (
-                <>
-                  <Link href={`/documents/${id}/report`}>
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <FileBarChart2 className="w-4 h-4" />
-                      Report
-                    </Button>
-                  </Link>
-                  <Link href={`/documents/${id}/extract`}>
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <Zap className="w-4 h-4" />
-                      Extract
-                    </Button>
-                  </Link>
-                </>
-              )}
-              <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <ExternalLink className="w-4 h-4" />
-                  View PDF
-                </Button>
-              </a>
-            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant={statusVariant[document.status]}>{document.status}</Badge>
+
+            {document.status === "READY" && (
+              <>
+                <Link href={`/documents/${id}/report`} className="hidden sm:block">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <FileBarChart2 className="w-4 h-4" />
+                    Report
+                  </Button>
+                </Link>
+                <Link href={`/documents/${id}/extract`} className="hidden sm:block">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Zap className="w-4 h-4" />
+                    Extract
+                  </Button>
+                </Link>
+              </>
+            )}
+
+            <a href={document.fileUrl} target="_blank" rel="noopener noreferrer" className="hidden sm:block">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <ExternalLink className="w-4 h-4" />
+                PDF
+              </Button>
+            </a>
           </div>
         </div>
 
-        {/* Chat */}
+        {/* Main content */}
         {document.status === "READY" ? (
-          <DocumentChatView
-            documentId={document.id}
-            sessions={allSessions}
-            activeSession={{ ...activeSession, fullMessages: initialMessages }}
-          />
+          <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-[600px]">
+            {/* PDF Viewer — hidden on mobile, visible on lg+ */}
+            <div className="hidden lg:flex lg:flex-1 min-h-0">
+              <PDFViewer documentId={document.id} documentName={document.name} />
+            </div>
+
+            {/* Chat panel */}
+            <div className="flex-1 lg:w-[480px] lg:shrink-0 lg:flex-none min-h-[600px]">
+              <DocumentChatView
+                documentId={document.id}
+                sessions={allSessions}
+                activeSession={{ ...activeSession, fullMessages: initialMessages }}
+              />
+            </div>
+          </div>
         ) : document.status === "PROCESSING" ? (
           <ProcessingStatus documentId={document.id} />
         ) : (
           <div className="bg-white rounded-xl border border-red-200 flex items-center justify-center py-12">
             <div className="text-center">
               <p className="font-medium text-red-600">Processing failed</p>
-              <p className="text-sm text-neutral-400 mt-1">Please delete and re-upload this document.</p>
+              <p className="text-sm text-neutral-400 mt-1">
+                Please delete this document and upload it again.
+              </p>
             </div>
           </div>
         )}
